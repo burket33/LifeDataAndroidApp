@@ -1,10 +1,19 @@
 package com.timburkepe.lifedata;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.databinding.DataBindingUtil;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.Toast;
 
+import com.timburkepe.lifedata.adapters.SleepAdapter;
 import com.timburkepe.lifedata.databinding.ActivityMainBinding;
 
 import org.json.JSONArray;
@@ -12,6 +21,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -25,29 +36,47 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = MainActivity.class.getSimpleName();
     public static final OkHttpClient client = new OkHttpClient();
-    public ActivityMainBinding binding;
+
+    private String sleepDataurl = "http://burket.pythonanywhere.com/api/v1/sleeps/";
 
     private SleepModel sleepModel = new SleepModel();
+
+    public ActivityMainBinding binding;
+    private SleepAdapter adapter;
+    private LinearLayoutManager linearLayout;
+    public Button createSleepDataButton;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = DataBindingUtil.
-                setContentView(this, R.layout.activity_main);
+        setContentView(R.layout.activity_main);
+        //createSleepDataButton = findViewById(R.id.createSleepDataButton);
 
-        String sleepDataurl = "http://burket.pythonanywhere.com/api/v1/sleeps/";
 
-        try {
-            postSleepData(client);
-        } catch (IOException e) {
-            Log.e(TAG, " IO Exception", e);
-        }
+        Activity activity = this;
+        Context context = this;
+        linearLayout = new LinearLayoutManager(this);
 
         try {
-            getSleepData(sleepDataurl, client);
+            getSleepData(sleepDataurl, client, linearLayout, context, activity);
         } catch (IOException e) {
-            Log.e(TAG, " IO Exception", e);
+            e.printStackTrace();
         }
+
+
+
+
+
+    }
+
+    public void onClickCreateSleepData(View view) {
+        startCreateSleepData();
+    }
+
+    private void startCreateSleepData() {
+        Intent intent = new Intent(this, CreateSleepDataActivity.class);
+        startActivity(intent);
 
     }
 
@@ -59,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
                 .add("description", "Tmmy, you  DID IT!!!")
                 .build();
         Request requestPost = new Request.Builder()
-                .url("http://burket.pythonanywhere.com/api/v1/sleeps/")
+                .url(sleepDataurl)
                 .header("Authorization", "Token e8eee846c0ec515008c4bd21056f555825ce8aa5")
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .post(formBody)
@@ -80,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void getSleepData(String sleepDataurl, OkHttpClient client) throws IOException {
+    private void getSleepData(String sleepDataurl, OkHttpClient client, final LinearLayoutManager linearLayout, final Context context, final Activity activity) throws IOException {
         Request request = new Request.Builder()
                 .url(sleepDataurl)
                 .build();
@@ -93,12 +122,19 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                String jsonData = response.body().string();
+                final String jsonData = response.body().string();
                 if (response.isSuccessful()){
-                    Log.v(TAG, jsonData);
-                    getLatestSleepDetails(jsonData);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            binding = DataBindingUtil.setContentView(activity, R.layout.activity_main);
+                            adapter = new SleepAdapter(getSleepDataList(jsonData), context);
+                            binding.sleepListItems.setAdapter(adapter);
+                            binding.sleepListItems.setLayoutManager(linearLayout);
 
-                    binding.setSleepData(sleepModel);
+                        }
+                    });
+
                 }
             }
         });
@@ -115,5 +151,31 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "JSON Exception Caught: ", e);
         }
 
+    }
+
+
+    private List<SleepModel> getSleepDataList(String jsonData) {
+        List<SleepModel> sleeps = new ArrayList<>();
+        try {
+            JSONArray sleepData = new JSONArray(jsonData);
+            for (int i = 0; i < sleepData.length(); i++){
+                JSONObject sleepDataObj = sleepData.getJSONObject(i);
+                SleepModel localSleepModel = new SleepModel();
+                localSleepModel.setBedtime(0); //TODO determine how to convert time string into long
+                localSleepModel.setWakeupTime(0); //TODO determine how to convert time string into long
+                localSleepModel.setQuality(sleepDataObj.getString("quality"));
+                localSleepModel.setDescription(sleepDataObj.getString("description"));
+                localSleepModel.setSleepDuration(Double.parseDouble(sleepDataObj.getString("sleep_duration")));
+                sleeps.add(localSleepModel);
+                Log.i(TAG, "FROM JSON: " + localSleepModel.getBedtime() +
+                        localSleepModel.getWakeupTime() +
+                        localSleepModel.getDescription() +
+                        localSleepModel.getQuality());
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "JSON Exception Caught: ", e);
+            sleeps = null;
+        }
+        return sleeps;
     }
 }

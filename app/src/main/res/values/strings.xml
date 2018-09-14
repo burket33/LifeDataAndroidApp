@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Life Data</string>
+    <string name="ADD_SLEEP_DATA_BUTTONTEXT">ADD SLEEP DATA</string>
 </resources>

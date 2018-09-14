@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+    <data>
+        <variable
+            name="sleepData"
+            type="com.timburkepe.lifedata.SleepModel"/>
+    </data>
+
+    <RelativeLayout
+        android:id="@+id/sleepListView"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:paddingBottom="8dp"
+        android:paddingTop="8dp"
+        tools:background="@color/colorPrimary">
+
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="@{String.valueOf(sleepData.quality)}"
+            android:textSize="24sp"
+            tools:text="Good sleep" />
+
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="44dp"
+            android:text="@{String.valueOf(sleepData.sleepDuration)}" />
+    </RelativeLayout>
+</layout>
